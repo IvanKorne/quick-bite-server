@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const requiredString = {
+export const requiredString = {
   type: String,
   required: true,
 };
