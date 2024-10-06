@@ -1,8 +1,10 @@
 import { Response, Request } from "express";
 import Stripe from "stripe";
 import Restaurant, { MenuItemType } from "../models/restaurant";
+import Order from "../models/order";
 
 const STRIPE_KEY = new Stripe(process.env.STRIPE_API_KEY!);
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
 const CLIENT_URL = process.env.CLIENT_URL!;
 
 type CheckoutSession = {
@@ -80,6 +82,37 @@ const createSession = async (
   return sessionData;
 };
 
+export const stripeWebhookHandler = async (req: Request, res: Response) => {
+  let event;
+
+  try {
+    const signature = req.headers["stripe-signature"];
+    event = STRIPE_KEY.webhooks.constructEvent(
+      req.body,
+      signature!,
+      STRIPE_WEBHOOK_SECRET
+    );
+  } catch (error) {
+    console.log(error);
+    return res.status(400).send("Webhook error");
+  }
+
+  if (event.type === "checkout.session.completed") {
+    const order = await Order.findById(event.data.object.metadata?.orderId);
+
+    if (!order) {
+      return res.sendStatus(404);
+    }
+
+    order.totalAmount = event.data.object.amount_total;
+    order.status = "paid";
+
+    await order.save();
+  }
+
+  res.status(200).send();
+};
+
 export const createCheckoutSession = async (req: Request, res: Response) => {
   try {
     const checkoutSessionRequest: CheckoutSession = req.body;
@@ -91,6 +124,14 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
       return res.sendStatus(404);
     }
 
+    const newOrder = new Order({
+      restaurant: restaurant,
+      user: req.userId,
+      status: "placed",
+      deliveryDetails: checkoutSessionRequest.deliveryDetails,
+      cartItems: checkoutSessionRequest.cartItems,
+    });
+
     const lineItems = createLineItems(
       checkoutSessionRequest,
       restaurant.menuItems
@@ -98,7 +139,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
 
     const session = await createSession(
       lineItems,
-      "TEST_ORDER_ID",
+      newOrder._id.toString(),
       restaurant.deliveryPrice,
       restaurant._id.toString()
     );
@@ -109,6 +150,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
         .json({ message: "Error creating checkout session" });
     }
 
+    await newOrder.save();
     res.json({ url: session.url });
   } catch (error) {
     console.log(error);

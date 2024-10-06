@@ -19,9 +19,10 @@ cloudinary.config({
 });
 
 const app = express();
-app.use(express.json());
-app.use(cors());
 const PORT = process.env.PORT || 3010;
+app.use(cors());
+app.use("/api/order/checkout/webhook", express.raw({ type: "*/*" }));
+app.use(express.json());
 
 app.get("/health", async (req: Request, res: Response) => {
   res.send({ message: "Health!" });

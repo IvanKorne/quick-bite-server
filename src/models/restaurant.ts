@@ -1,7 +1,7 @@
 import mongoose, { InferSchemaType } from "mongoose";
 import { requiredString } from "./user";
 
-const requiredNumber = {
+export const requiredNumber = {
   type: Number,
   required: true,
 };
