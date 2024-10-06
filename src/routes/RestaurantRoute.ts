@@ -1,13 +1,9 @@
 import express from "express";
-import {
-  createRestaurant,
-  getRestaurant,
-  updateRestaurant,
-} from "../controllers/myRestaurantController";
-import { jwtCheck, jwtParse } from "../middleware/auth";
-import { validateRestaurantRequest } from "../middleware/validation";
 import { param } from "express-validator";
-import { searchRestaurants } from "../controllers/RestaurantController";
+import {
+  searchRestaurants,
+  getRestaurantDetails,
+} from "../controllers/RestaurantController";
 
 const router = express.Router();
 
@@ -19,6 +15,16 @@ router.get(
     .notEmpty()
     .withMessage("City must be a string"),
   searchRestaurants as any
+);
+
+router.get(
+  "/:restaurantId",
+  param("restaurantId")
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage("RestaurantId must be a string"),
+  getRestaurantDetails as any
 );
 
 export default router;
