@@ -82,6 +82,22 @@ const createSession = async (
   return sessionData;
 };
 
+export const getOrders = async (req: Request, res: Response) => {
+  try {
+    const orders = await Order.find({ user: req.userId })
+      .populate("restaurant")
+      .populate("user");
+    if (!orders) {
+      return res.sendStatus(404);
+    }
+
+    res.json(orders);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Error getting order details" });
+  }
+};
+
 export const stripeWebhookHandler = async (req: Request, res: Response) => {
   let event;
 
