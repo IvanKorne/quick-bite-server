@@ -4,6 +4,7 @@ import {
   createRestaurant,
   getRestaurant,
   updateRestaurant,
+  updateOrderStatus,
   getRestaurantOrders,
 } from "../controllers/myRestaurantController";
 import { jwtCheck, jwtParse } from "../middleware/auth";
@@ -31,6 +32,12 @@ router.post(
   createRestaurant as any
 );
 
+router.patch(
+  "/order/:orderId/status",
+  jwtCheck,
+  jwtParse as any,
+  updateOrderStatus as any
+);
 router.put(
   "/",
   upload.single("imageFile"),

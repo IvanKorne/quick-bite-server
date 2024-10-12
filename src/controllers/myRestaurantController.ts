@@ -58,6 +58,7 @@ export const getRestaurantOrders = async (req: Request, res: Response) => {
     const orders = await Order.find({ restaurant: restaurant._id })
       .populate("restaurant")
       .populate("user");
+
     res.json(orders);
   } catch (err) {
     console.log(err);
@@ -101,5 +102,30 @@ export const updateRestaurant = async (req: Request, res: Response) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error updating restaurant" });
+  }
+};
+
+export const updateOrderStatus = async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.sendStatus(404);
+    }
+
+    const restaurant = await Restaurant.findById(order.restaurant);
+
+    if (restaurant?.user?._id.toString() !== req.userId) {
+      return res.status(401).send();
+    }
+
+    order.status = status;
+    await order.save();
+    res.status(200).json(order);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Error updating order status" });
   }
 };
